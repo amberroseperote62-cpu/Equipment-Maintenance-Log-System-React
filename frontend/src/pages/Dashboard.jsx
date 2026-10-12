@@ -50,18 +50,25 @@ export default function Dashboard() {
       </div>
 
       <div className="stats">
-        {Object.entries(d.stats).map(([k, v]) => (
-          <div
-            className="stat"
-            key={k}
-            onClick={() => handleStatClick(k)}
-            style={{ cursor: "pointer" }}
-            title={`View ${k}`}
-          >
-            <b>{v}</b>
-            <span>{k}</span>
-          </div>
-        ))}
+        {Object.entries(d.stats)
+          .filter(
+            ([k]) =>
+              !k.toLowerCase().includes("under repair") &&
+              !k.toLowerCase().includes("replacement") &&
+              !k.toLowerCase().includes("attention")
+          )
+          .map(([k, v]) => (
+            <div
+              className="stat"
+              key={k}
+              onClick={() => handleStatClick(k)}
+              style={{ cursor: "pointer" }}
+              title={`View ${k}`}
+            >
+              <b>{v}</b>
+              <span>{k}</span>
+            </div>
+          ))}
       </div>
 
       <div className="section-header" style={{ marginTop: 32 }}>
