@@ -1,0 +1,123 @@
+/* ─── Form Inputs ────────────────────────────────────────────── */
+input, select, textarea {
+  width: 100%;
+  padding: 9px 13px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.875rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent2);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--fg3);
+}
+select option {
+  background: var(--bg2);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: var(--accent2);
+  color: #fff;
+  white-space: nowrap;
+}
+button:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+button:active {
+  transform: translateY(0);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+button.btn-ghost {
+  background: transparent;
+  color: var(--fg2);
+  border: 1px solid var(--border);
+}
+button.btn-ghost:hover {
+  background: var(--bg3);
+  color: var(--fg);
+  border-color: var(--border2);
+  box-shadow: none;
+}
+
+button.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+button.btn-danger:hover {
+  background: var(--red-bg);
+  border-color: var(--red);
+  box-shadow: none;
+}
+
+button.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+}
+
+button.btn-success {
+  background: rgba(63, 185, 80, 0.2);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+button.btn-success:hover {
+  background: var(--green-bg);
+  border-color: var(--green);
+  box-shadow: none;
+}
+
+/* ─── Pager ──────────────────────────────────────────────────── */
+.pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 8px;
+}
+.pager span {
+  font-size: 0.8125rem;
+  color: var(--fg2);
+  min-width: 120px;
+  text-align: center;
+}
+.pager button {
+  background: var(--surface2);
+  color: var(--fg2);
+  border: 1px solid var(--border);
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+}
+.pager button:hover:not(:disabled) {
+  background: var(--bg3);
+  color: var(--fg);
+  box-shadow: none;
+  transform: none;
+}

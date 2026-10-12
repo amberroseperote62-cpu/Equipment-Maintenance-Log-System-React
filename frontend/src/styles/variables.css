@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --surface: #1c2128;
+  --surface2: #262c36;
+  --border: #30363d;
+  --border2: #444c56;
+  --fg: #e6edf3;
+  --fg2: #8b949e;
+  --fg3: #6e7681;
+  --accent: #58a6ff;
+  --accent2: #388bfd;
+  --accent-glow: rgba(88, 166, 255, 0.15);
+  --green: #3fb950;
+  --green-bg: rgba(63, 185, 80, 0.12);
+  --yellow: #d29922;
+  --yellow-bg: rgba(210, 153, 34, 0.15);
+  --red: #f85149;
+  --red-bg: rgba(248, 81, 73, 0.12);
+  --orange: #e3b341;
+  --orange-bg: rgba(227, 179, 65, 0.12);
+  --purple: #bc8cff;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --nav-h: 60px;
+  --transition: 0.18s ease;
+}
+
+/* ─── Global Reset & Scrollbars ─────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg3);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

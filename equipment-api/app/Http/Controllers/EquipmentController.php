@@ -14,13 +14,13 @@ class EquipmentController extends Controller {
     }
     public function show(Request $r, $id) {
         $e = Equipment::visibleTo($r->user())->with('room.inCharge:id,name')->findOrFail($id);
-        $e->logs = $e->logs()->with(['user:id,name', 'voider:id,name'])->orderByDesc('logged_at')->get(); // newest first
+        $e->logs = $e->logs()->with(['user:id,name', 'voider:id,name'])->orderByDesc('logged_at')->get();
         return $e;
     }
     public function store(Request $r) { return response()->json(Equipment::create($r->validate($this->rules())), 201); }
     public function update(Request $r, Equipment $equipment) { $equipment->update($r->validate($this->rules($equipment->id))); return $equipment; }
     public function destroy(Equipment $equipment) {
-        if ($equipment->logs()->exists() || $equipment->repairRequests()->exists()) {
+        if ($equipment->logs()->exists()) {
             $equipment->update(['status' => 'disposed']);
             return ['message' => 'Equipment has history, so it was marked as disposed instead of deleted.'];
         }

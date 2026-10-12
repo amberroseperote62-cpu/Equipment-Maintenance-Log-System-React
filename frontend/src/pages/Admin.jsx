@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api, { errMsg } from "../api";
 import { Pager } from "./util";
+import DeleteModal from "../components/DeleteModal";
 
 function useList(url, params) {
   const [data, setData] = useState(null);
@@ -26,11 +28,15 @@ function Msg({ m }) {
   );
 }
 
+/* ── Rooms ─────────────────────────────────────────────── */
 export function Rooms() {
+  const navigate = useNavigate();
   const { data, load, setPage } = useList("/rooms");
   const [form, setForm] = useState(null);
   const [ics, setIcs] = useState([]);
   const [m, setM] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     api.get("/users", { params: { role: "incharge", all: 1 } }).then((r) => setIcs(r.data));
@@ -50,21 +56,30 @@ export function Rooms() {
     }
   };
 
-  const del = async (r) => {
-    if (!confirm(`Delete room "${r.room_name}"?`)) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await api.delete(`/rooms/${r.id}`);
-      setM({ ok: "Room deleted." });
+      await api.delete(`/rooms/${deleteTarget.id}`);
+      setM({ ok: `Room "${deleteTarget.room_name}" deleted successfully.` });
+      setDeleteTarget(null);
       load();
     } catch (er) {
       setM({ err: errMsg(er) });
+    } finally {
+      setDeleting(false);
     }
   };
 
   return (
     <>
       <div className="page-header">
-        <h2>Rooms</h2>
+        <div>
+          <h2>Rooms</h2>
+          <p style={{ color: "var(--fg2)", fontSize: "0.85rem", marginTop: 4 }}>
+            Click any room to view all its equipment.
+          </p>
+        </div>
         <button onClick={() => setForm({ room_name: "", building: "", floor: "", in_charge_id: "" })}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add room
@@ -125,26 +140,63 @@ export function Rooms() {
                   <th>Building</th>
                   <th>Floor</th>
                   <th>In-charge</th>
-                  <th>Equipment count</th>
+                  <th>Equipment</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {data.data.map((r) => (
-                  <tr key={r.id}>
-                    <td style={{ fontWeight: 500 }}>{r.room_name}</td>
+                  <tr
+                    key={r.id}
+                    className="clickable-row"
+                    onClick={() => navigate(`/equipment?room_id=${r.id}`)}
+                    title="Click row to view all equipment in this room"
+                  >
+                    <td>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--accent)" }}>
+                        <span>{r.room_name}</span>
+                        <svg
+                          width="12" height="12"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ opacity: 0.6 }}
+                        >
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </div>
+                    </td>
                     <td style={{ color: "var(--fg2)" }}>{r.building}</td>
                     <td style={{ color: "var(--fg2)" }}>{r.floor || "—"}</td>
                     <td style={{ color: r.in_charge ? "var(--fg)" : "var(--fg3)" }}>
                       {r.in_charge?.name || "—"}
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: "var(--accent)" }}>{r.equipment_count}</span>
+                      <span className="equipment-count-badge">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        {r.equipment_count} item{r.equipment_count !== 1 ? "s" : ""}
+                      </span>
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button className="btn-ghost btn-sm" onClick={() => { setForm(r); setM(null); }}>Edit</button>
-                        <button className="btn-danger btn-sm" onClick={() => del(r)}>Delete</button>
+                        <button
+                          className="btn-ghost btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setForm(r);
+                            setM(null);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn-danger btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(r);
+                          }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -155,14 +207,40 @@ export function Rooms() {
         </div>
       )}
       <Pager meta={data} onPage={setPage} />
+
+      <DeleteModal
+        isOpen={!!deleteTarget}
+        title="Delete Room"
+        itemTitle={deleteTarget?.room_name}
+        message={
+          deleteTarget ? (
+            <>
+              Are you sure you want to delete room{" "}
+              <span className="delete-highlight">{deleteTarget.room_name}</span>?
+              {deleteTarget.equipment_count > 0 && (
+                <span style={{ display: "block", marginTop: 10, color: "var(--yellow)", fontSize: "0.825rem" }}>
+                  ⚠ Notice: This room currently contains {deleteTarget.equipment_count} equipment item{deleteTarget.equipment_count !== 1 ? "s" : ""}.
+                </span>
+              )}
+            </>
+          ) : null
+        }
+        confirmText="Delete Room"
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        loading={deleting}
+      />
     </>
   );
 }
 
+/* ── Users ─────────────────────────────────────────────── */
 export function Users() {
   const { data, load, setPage } = useList("/users");
   const [form, setForm] = useState(null);
   const [m, setM] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const save = async (e) => {
     e.preventDefault();
@@ -178,18 +256,21 @@ export function Users() {
     }
   };
 
-  const del = async (u) => {
-    if (!confirm(`Delete user "${u.name}"?`)) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await api.delete(`/users/${u.id}`);
-      setM({ ok: "User deleted." });
+      await api.delete(`/users/${deleteTarget.id}`);
+      setM({ ok: `User "${deleteTarget.name}" deleted successfully.` });
+      setDeleteTarget(null);
       load();
     } catch (er) {
       setM({ err: errMsg(er) });
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const ROLE_COLORS = { admin: "purple", technician: "yellow", incharge: "green" };
   const roleStyle = (role) => ({
     admin: { background: "rgba(188,140,255,0.12)", color: "#bc8cff", border: "1px solid rgba(188,140,255,0.25)" },
     technician: { background: "rgba(210,153,34,0.12)", color: "#d29922", border: "1px solid rgba(210,153,34,0.25)" },
@@ -229,18 +310,28 @@ export function Users() {
             />
             <input
               type="password"
-              placeholder={form.id ? "New password (leave blank to keep)" : "Password (min 8 chars)"}
+              placeholder={form.id ? "Password (leave blank to keep unchanged)" : "Password"}
+              value={form.password || ""}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required={!form.id}
             />
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              <option value="admin">Admin</option>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+            >
               <option value="technician">Technician</option>
-              <option value="incharge">In-charge</option>
+              <option value="incharge">Room in-charge</option>
+              <option value="admin">Admin</option>
             </select>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            {form.id && (
+              <select
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            )}
             <div className="full" style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button type="button" className="btn-ghost" onClick={() => setForm(null)}>Cancel</button>
               <button type="submit">Save user</button>
@@ -251,6 +342,8 @@ export function Users() {
 
       {!data ? (
         <div className="msg"><div className="spinner" style={{ margin: "0 auto 12px" }} />Loading…</div>
+      ) : data.data.length === 0 ? (
+        <div className="msg">No users found.</div>
       ) : (
         <div className="table-wrapper">
           <div className="table-scroll">
@@ -267,51 +360,38 @@ export function Users() {
               <tbody>
                 {data.data.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ fontWeight: 500 }}>{u.name}</td>
-                    <td style={{ color: "var(--fg2)", fontSize: "0.875rem" }}>{u.email}</td>
+                    <td style={{ fontWeight: 500, color: "var(--fg)" }}>{u.name}</td>
+                    <td style={{ color: "var(--fg2)" }}>{u.email}</td>
                     <td>
-                      <span
-                        style={{
-                          ...roleStyle(u.role),
-                          display: "inline-block",
-                          padding: "2px 10px",
-                          borderRadius: 99,
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {u.role}
+                      <span className="badge" style={roleStyle(u.role)}>
+                        {u.role === "incharge" ? "In-charge" : u.role}
                       </span>
                     </td>
                     <td>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          color: u.status === "active" ? "var(--green)" : "var(--fg3)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: u.status === "active" ? "var(--green)" : "var(--fg3)",
-                          }}
-                        />
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: "0.8125rem",
+                        color: u.status === "active" ? "var(--green)" : "var(--fg3)",
+                      }}>
+                        <span style={{
+                          width: 6, height: 6,
+                          borderRadius: "50%",
+                          background: u.status === "active" ? "var(--green)" : "var(--fg3)",
+                        }} />
                         {u.status}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button className="btn-ghost btn-sm" onClick={() => { setForm({ ...u, password: "" }); setM(null); }}>
-                          Edit
+                        <button className="btn-ghost btn-sm" onClick={() => { setForm(u); setM(null); }}>Edit</button>
+                        <button
+                          className="btn-danger btn-sm"
+                          onClick={() => setDeleteTarget(u)}
+                        >
+                          Delete
                         </button>
-                        <button className="btn-danger btn-sm" onClick={() => del(u)}>Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -322,6 +402,25 @@ export function Users() {
         </div>
       )}
       <Pager meta={data} onPage={setPage} />
+
+      <DeleteModal
+        isOpen={!!deleteTarget}
+        title="Delete User"
+        itemTitle={deleteTarget?.name}
+        message={
+          deleteTarget ? (
+            <>
+              Are you sure you want to delete user{" "}
+              <span className="delete-highlight">{deleteTarget.name}</span> ({deleteTarget.email})?
+              They will no longer have access to the system.
+            </>
+          ) : null
+        }
+        confirmText="Delete User"
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        loading={deleting}
+      />
     </>
   );
 }

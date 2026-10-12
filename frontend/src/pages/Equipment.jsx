@@ -1,30 +1,49 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api, { errMsg } from "../api";
 import { useAuth } from "../AuthContext";
 import { ACTIONS, STATUSES, Pager, fmt, label } from "./util";
+import DeleteModal from "../components/DeleteModal";
 
 export function EquipmentList() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const roomIdParam = searchParams.get("room_id") || "";
+
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [roomId, setRoomId] = useState(roomIdParam);
   const [rooms, setRooms] = useState([]);
   const [form, setForm] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(
-    () =>
-      api
-        .get("/equipment", { params: { q, page } })
-        .then((r) => setData(r.data)),
-    [q, page],
-  );
-  useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (user.role === "admin")
-      api.get("/rooms", { params: { all: 1 } }).then((r) => setRooms(r.data));
-  }, [user.role]);
+    setRoomId(searchParams.get("room_id") || "");
+    setPage(1);
+  }, [searchParams]);
+
+  useEffect(() => {
+    api
+      .get("/rooms", { params: { all: 1 } })
+      .then((r) => setRooms(r.data))
+      .catch(() => {});
+  }, []);
+
+  const load = useCallback(() => {
+    const params = { q, page };
+    if (roomId) params.room_id = roomId;
+    api
+      .get("/equipment", { params })
+      .then((r) => setData(r.data));
+  }, [q, page, roomId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -38,24 +57,62 @@ export function EquipmentList() {
     }
   };
 
-  const remove = async (x) => {
-    if (!confirm(`Delete ${x.name}? Equipment with history will be marked disposed instead.`)) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      setMsg({ ok: (await api.delete(`/equipment/${x.id}`)).data.message });
+      const res = await api.delete(`/equipment/${deleteTarget.id}`);
+      setMsg({ ok: res.data.message });
+      setDeleteTarget(null);
       load();
     } catch (er) {
       setMsg({ err: errMsg(er) });
+    } finally {
+      setDeleting(false);
     }
   };
+
+
+  const handleRoomFilterChange = (val) => {
+    setRoomId(val);
+    setPage(1);
+    if (val) {
+      setSearchParams({ room_id: val });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const currentRoomName = rooms.find((r) => String(r.id) === String(roomId))?.room_name;
 
   return (
     <>
       <div className="page-header">
-        <h2>Equipment</h2>
+        <div>
+          <h2>Equipment</h2>
+          {roomId && (
+            <div className="active-filter-chip" style={{ marginTop: 6 }}>
+              <span>Filtered by Room: <b>{currentRoomName || `Room #${roomId}`}</b></span>
+              <button
+                type="button"
+                onClick={() => handleRoomFilterChange("")}
+                title="Clear room filter"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
         {user.role === "admin" && (
           <button
             onClick={() =>
-              setForm({ room_id: rooms[0]?.id || "", name: "", property_number: "", category: "", status: "working" })
+              setForm({
+                room_id: roomId || rooms[0]?.id || "",
+                name: "",
+                property_number: "",
+                category: "",
+                status: "working",
+              })
             }
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -64,12 +121,35 @@ export function EquipmentList() {
         )}
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <input
           placeholder="🔍  Search by name or property number…"
           value={q}
           onChange={(e) => { setQ(e.target.value); setPage(1); }}
+          style={{ flex: 1, minWidth: 200 }}
         />
+        <select
+          value={roomId}
+          onChange={(e) => handleRoomFilterChange(e.target.value)}
+          style={{ minWidth: 160 }}
+          aria-label="Filter by room"
+        >
+          <option value="">All Rooms</option>
+          {rooms.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.room_name}
+            </option>
+          ))}
+        </select>
+        {roomId && (
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={() => handleRoomFilterChange("")}
+          >
+            ✕ Clear filter
+          </button>
+        )}
       </div>
 
       {msg?.ok && <div className="ok" style={{ marginBottom: 12 }}>✓ {msg.ok}</div>}
@@ -86,6 +166,7 @@ export function EquipmentList() {
               onChange={(e) => setForm({ ...form, room_id: e.target.value })}
               required
             >
+              <option value="">Select Room</option>
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>{r.room_name}</option>
               ))}
@@ -119,7 +200,9 @@ export function EquipmentList() {
       {!data ? (
         <div className="msg"><div className="spinner" style={{ margin: "0 auto 12px" }} />Loading…</div>
       ) : data.data.length === 0 ? (
-        <div className="msg">No equipment found.</div>
+        <div className="msg">
+          {roomId ? `No equipment found in ${currentRoomName || "this room"}.` : "No equipment found."}
+        </div>
       ) : (
         <div className="table-wrapper">
           <div className="table-scroll">
@@ -136,9 +219,14 @@ export function EquipmentList() {
               </thead>
               <tbody>
                 {data.data.map((x) => (
-                  <tr key={x.id}>
+                  <tr
+                    key={x.id}
+                    className="clickable-row"
+                    onClick={() => navigate(`/equipment/${x.id}`)}
+                    title="Click row to view details"
+                  >
                     <td>
-                      <Link to={`/equipment/${x.id}`} style={{ fontWeight: 500 }}>{x.name}</Link>
+                      <span style={{ fontWeight: 600, color: "var(--accent)" }}>{x.name}</span>
                     </td>
                     <td style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "var(--fg2)" }}>
                       {x.property_number}
@@ -149,8 +237,16 @@ export function EquipmentList() {
                       <span className={`badge ${x.status}`}>{label(x.status)}</span>
                     </td>
                     {user.role === "admin" && (
-                      <td>
-                        <button className="btn-danger btn-sm" onClick={() => remove(x)}>Delete</button>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="btn-danger btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(x);
+                          }}
+                        >
+                          Delete
+                        </button>
                       </td>
                     )}
                   </tr>
@@ -161,6 +257,25 @@ export function EquipmentList() {
         </div>
       )}
       <Pager meta={data} onPage={setPage} />
+
+      <DeleteModal
+        isOpen={!!deleteTarget}
+        title="Delete Equipment"
+        itemTitle={deleteTarget?.name}
+        message={
+          deleteTarget ? (
+            <>
+              Are you sure you want to delete{" "}
+              <span className="delete-highlight">{deleteTarget.name}</span> (#{deleteTarget.property_number})?
+              If this equipment has maintenance history, it will be safely marked as disposed instead.
+            </>
+          ) : null
+        }
+        confirmText="Delete Equipment"
+        onConfirm={confirmDelete}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        loading={deleting}
+      />
     </>
   );
 }
@@ -176,7 +291,10 @@ export function EquipmentDetail() {
     logged_at: "",
     equipment_status: "",
   });
-  const [problem, setProblem] = useState("");
+
+  const [voidTarget, setVoidTarget] = useState(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
 
   const load = useCallback(
     () =>
@@ -207,19 +325,21 @@ export function EquipmentDetail() {
     setLog((prev) => ({ ...prev, description: "" }));
   };
 
-  const report = async (ev) => {
+  const handleConfirmVoid = async (ev) => {
     ev.preventDefault();
-    await run(
-      () => api.post("/repair-requests", { equipment_id: id, description: problem }),
-      "Problem reported successfully.",
-    );
-    setProblem("");
-  };
-
-  const voidLog = (l) => {
-    const reason = prompt("Reason for voiding this entry?");
-    if (reason && confirm("Void this log entry? It will stay visible in the history."))
-      run(() => api.patch(`/logs/${l.id}/void`, { void_reason: reason }), "Entry voided.");
+    if (!voidTarget || !voidReason.trim()) return;
+    setVoiding(true);
+    try {
+      await api.patch(`/logs/${voidTarget.id}/void`, { void_reason: voidReason.trim() });
+      setMsg({ ok: "Log entry voided." });
+      setVoidTarget(null);
+      setVoidReason("");
+      load();
+    } catch (er) {
+      setMsg({ err: errMsg(er) });
+    } finally {
+      setVoiding(false);
+    }
   };
 
   if (!e)
@@ -248,7 +368,13 @@ export function EquipmentDetail() {
             <span className="sep">·</span>
             <span>{e.category}</span>
             <span className="sep">·</span>
-            <span>{e.room?.room_name}{e.room?.building ? `, ${e.room.building}` : ""}</span>
+            <Link
+              to={`/equipment?room_id=${e.room_id}`}
+              style={{ color: "inherit", textDecoration: "underline" }}
+              title="View all equipment in this room"
+            >
+              {e.room?.room_name}{e.room?.building ? `, ${e.room.building}` : ""}
+            </Link>
           </div>
         </div>
       </div>
@@ -296,22 +422,6 @@ export function EquipmentDetail() {
         </div>
       )}
 
-      {["admin", "incharge"].includes(user.role) && (
-        <div className="form-card">
-          <div className="form-title">🚨 Report a problem</div>
-          <form className="row" onSubmit={report}>
-            <input
-              placeholder="Describe the problem in detail…"
-              value={problem}
-              onChange={(x) => setProblem(x.target.value)}
-              required
-              minLength={5}
-            />
-            <button type="submit">Report problem</button>
-          </form>
-        </div>
-      )}
-
       <div className="section-header" style={{ marginTop: 28 }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <span className="section-title">History timeline</span>
@@ -338,7 +448,14 @@ export function EquipmentDetail() {
                   )}
                 </div>
                 {user.role === "admin" && !l.is_voided && (
-                  <button className="btn-danger btn-sm action-btn" style={{ flexShrink: 0 }} onClick={() => voidLog(l)}>
+                  <button
+                    className="btn-danger btn-sm action-btn"
+                    style={{ flexShrink: 0 }}
+                    onClick={() => {
+                      setVoidTarget(l);
+                      setVoidReason("");
+                    }}
+                  >
                     Void
                   </button>
                 )}
@@ -346,6 +463,70 @@ export function EquipmentDetail() {
             </li>
           ))}
         </ul>
+      )}
+
+      {voidTarget && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !voiding && setVoidTarget(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="delete-dialog" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleConfirmVoid}>
+              <div className="delete-dialog-top">
+                <div className="delete-dialog-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                  </svg>
+                </div>
+                <div className="delete-dialog-heading">
+                  <h3>Void Log Entry</h3>
+                  <p className="delete-dialog-desc">
+                    Voiding invalidates this entry while permanently retaining it in the audit history.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <input
+                  placeholder="Reason for voiding (required)…"
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  required
+                  minLength={3}
+                  autoFocus
+                  style={{ width: "100%" }}
+                />
+              </div>
+
+              <div className="delete-dialog-actions">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setVoidTarget(null)}
+                  disabled={voiding}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-danger"
+                  disabled={voiding || !voidReason.trim()}
+                >
+                  {voiding ? (
+                    <>
+                      <span className="spinner-inline" /> Voiding…
+                    </>
+                  ) : (
+                    "Void Entry"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </>
   );

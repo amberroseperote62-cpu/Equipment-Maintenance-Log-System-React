@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-use App\Models\{Equipment, EquipmentLog, RepairRequest, Room};
+use App\Models\{Equipment, EquipmentLog, Room};
 use Illuminate\Http\Request;
 class DashboardController extends Controller {
     public function __invoke(Request $r) {
@@ -9,16 +9,17 @@ class DashboardController extends Controller {
         if ($u->role === 'admin') return ['stats' => [
             'Total rooms' => Room::count(), 'Total equipment' => Equipment::count(),
             'Under repair' => Equipment::where('status', 'under_repair')->count(),
-            'Pending requests' => RepairRequest::where('status', 'pending')->count()],
+            'Needs replacement' => Equipment::where('status', 'needs_replacement')->count()],
             'recent_logs' => $recent(EquipmentLog::query())];
         if ($u->role === 'technician') return ['stats' => [
-            'Assigned requests' => RepairRequest::where('assigned_to', $u->id)->whereIn('status', ['assigned', 'in_progress'])->count(),
-            'My logs' => EquipmentLog::where('user_id', $u->id)->count()],
+            'My logs' => EquipmentLog::where('user_id', $u->id)->count(),
+            'Cleaned' => EquipmentLog::where('user_id', $u->id)->where('action_type', 'cleaned')->count(),
+            'Repaired' => EquipmentLog::where('user_id', $u->id)->where('action_type', 'repaired')->count()],
             'recent_logs' => $recent(EquipmentLog::where('user_id', $u->id))];
         return ['stats' => [
             'My equipment' => Equipment::visibleTo($u)->count(),
-            'Open requests' => RepairRequest::where('reported_by', $u->id)->where('status', '!=', 'resolved')->count(),
-            'Resolved requests' => RepairRequest::where('reported_by', $u->id)->where('status', 'resolved')->count()],
+            'Working' => Equipment::visibleTo($u)->where('status', 'working')->count(),
+            'Needs attention' => Equipment::visibleTo($u)->whereIn('status', ['under_repair', 'needs_replacement'])->count()],
             'recent_logs' => $recent(EquipmentLog::whereHas('equipment', fn ($e) => $e->visibleTo($u)))];
     }
 }

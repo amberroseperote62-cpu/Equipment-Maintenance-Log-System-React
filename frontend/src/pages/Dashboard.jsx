@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { fmt } from "./util";
 import { useAuth } from "../AuthContext";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [d, setD] = useState(null);
+
   useEffect(() => {
     api.get("/dashboard").then((r) => setD(r.data));
   }, []);
@@ -25,6 +28,14 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  const handleStatClick = (key) => {
+    if (key.toLowerCase().includes("room")) {
+      navigate("/rooms");
+    } else {
+      navigate("/equipment");
+    }
+  };
+
   return (
     <>
       <div className="page-header">
@@ -40,7 +51,13 @@ export default function Dashboard() {
 
       <div className="stats">
         {Object.entries(d.stats).map(([k, v]) => (
-          <div className="stat" key={k}>
+          <div
+            className="stat"
+            key={k}
+            onClick={() => handleStatClick(k)}
+            style={{ cursor: "pointer" }}
+            title={`View ${k}`}
+          >
             <b>{v}</b>
             <span>{k}</span>
           </div>
@@ -61,10 +78,16 @@ export default function Dashboard() {
         <div className="logs-card">
           <ul className="plain" style={{ margin: 0 }}>
             {d.recent_logs.map((l) => (
-              <li key={l.id} className={l.is_voided ? "void" : ""}>
+              <li
+                key={l.id}
+                className={l.is_voided ? "void" : ""}
+                onClick={() => l.equipment_id && navigate(`/equipment/${l.equipment_id}`)}
+                style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                title="Click to view equipment"
+              >
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div>
-                    <b style={{ color: "var(--fg)", fontSize: "0.875rem" }}>{l.equipment?.name}</b>
+                    <b style={{ color: "var(--accent)", fontSize: "0.875rem" }}>{l.equipment?.name}</b>
                     <span style={{ color: "var(--fg3)", margin: "0 6px" }}>·</span>
                     <span style={{ color: "var(--fg2)", textTransform: "capitalize" }}>
                       {l.action_type.replaceAll("_", " ")}

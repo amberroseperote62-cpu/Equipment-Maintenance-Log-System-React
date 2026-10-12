@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-use App\Models\{Equipment, EquipmentLog, RepairRequest};
+use App\Models\{Equipment, EquipmentLog};
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 class LogController extends Controller {
@@ -15,14 +15,12 @@ class LogController extends Controller {
             ->orderByDesc('logged_at')->paginate(10);
     }
     public function store(Request $r) {
-        $d = $r->validate(['equipment_id' => 'required|exists:equipment,id', 'repair_request_id' => 'nullable|exists:repair_requests,id',
+        $d = $r->validate(['equipment_id' => 'required|exists:equipment,id',
             'action_type' => ['required', Rule::in(['cleaned', 'repaired', 'modified', 'inspected', 'part_replaced'])],
             'description' => 'required|string|min:3', 'logged_at' => 'nullable|date|before_or_equal:now',
             'equipment_status' => ['nullable', Rule::in(EquipmentController::STATUSES)]]);
         $log = EquipmentLog::create(collect($d)->except('equipment_status')->all() + ['user_id' => $r->user()->id, 'logged_at' => $d['logged_at'] ?? now()]);
         if (!empty($d['equipment_status'])) Equipment::whereKey($d['equipment_id'])->update(['status' => $d['equipment_status']]);
-        if (!empty($d['repair_request_id']))
-            RepairRequest::whereKey($d['repair_request_id'])->where('status', 'assigned')->update(['status' => 'in_progress']);
         return response()->json($log, 201);
     }
     // Logs are never edited or deleted, only voided with a reason.

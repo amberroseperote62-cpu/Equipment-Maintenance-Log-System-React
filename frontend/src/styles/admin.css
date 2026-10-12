@@ -1,0 +1,30 @@
+/* ─── Admin Management Pages ─────────────────────────────────── */
+.admin-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* User status indicator */
+.user-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+}
+
+.user-status.active {
+  color: var(--green);
+}
+
+.user-status.inactive {
+  color: var(--fg3);
+}
+
+/* Table action buttons */
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
