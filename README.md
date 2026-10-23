@@ -167,5 +167,38 @@ The application will be running at `http://localhost:5174` (or the port specifie
 
 ---
 
+## 📚 References
+
+The following external sources, documentation, community discussions, and AI tools were consulted and referenced during the development of this project:
+
+### 1. Artificial Intelligence (AI) Assistance
+- **Google DeepMind Antigravity / Gemini**:
+  - Code generation, scaffolding, and refactoring for Laravel REST API controllers (`DashboardController.php`, `EquipmentController.php`, `LogController.php`).
+  - Frontend component structure and state management for React (role-based dashboard analytics, custom `DeleteModal.jsx` confirmation dialog, and dynamic query filtering).
+  - Modular CSS design token architecture (`variables.css`, `base.css`, dark theme, and glassmorphism styling).
+
+### 2. Documentation & Official Guides
+- **Laravel**:
+  - [Laravel Official Documentation](https://laravel.com/docs) — Eloquent ORM relationships, database migrations, and RESTful routing.
+  - [Laravel Sanctum](https://laravel.com/docs/sanctum) — Token-based SPA/API authentication and middleware guards.
+- **React & React Router**:
+  - [React Documentation](https://react.dev/) — Component lifecycle, hooks (`useState`, `useEffect`, `useContext`), and form handling.
+  - [React Router DOM](https://reactrouter.com/) — Declarative routing, protected route guards, and URL search parameters (`useSearchParams`).
+- **Axios**:
+  - [Axios HTTP Client Documentation](https://axios-http.com/) — Global API client instance configuration and HTTP authorization header interceptors.
+- **Typography & Styling**:
+  - [Google Fonts](https://fonts.google.com/) — Inter and JetBrains Mono typefaces.
+  - [MDN Web Docs - CSS Layout](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout) — Flexbox and Grid responsive table layouts.
+
+### 3. Stack Overflow & Community Discussions
+- **Authentication & Persistence**:
+  - Best practices for persistent client-side authentication token handling with React Context and `localStorage`.
+- **UI & Modal Patterns**:
+  - Accessible modal dialog implementations with click-outside detection and backdrop blur overlays.
+  - Full-row clickable table patterns preserving inner action button event propagation.
+
+---
+
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).
+
