@@ -62,7 +62,7 @@ After running the database seeders, the following accounts are available for tes
 
 ```text
 equipment-maintenance-system/
-├── equipment-api/             # Laravel REST API Backend
+├── backend/                   # Laravel REST API Backend
 │   ├── app/
 │   │   ├── Http/Controllers/ # Auth, Equipment, Log, Room, User Controllers
 │   │   └── Models/            # Equipment, EquipmentLog, Room, User
@@ -108,7 +108,7 @@ equipment-maintenance-system/
 
 ```bash
 # Navigate to the backend directory
-cd equipment-api
+cd backend
 
 # Install PHP dependencies
 composer install
