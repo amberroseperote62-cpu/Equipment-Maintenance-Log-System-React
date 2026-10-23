@@ -1,5 +1,9 @@
 # Equipment Maintenance Log System (EMLS)
 
+**Author:** Amber Rose Perote  
+**Project:** Equipment Maintenance & Log System (EMLS)  
+**Stack:** React (Vite) + Laravel REST API + SQLite/MySQL
+
 A full-stack Equipment Maintenance and Logging System built with **React** and **Laravel**. Designed for institutions, laboratories, and offices to monitor equipment status, track room assignments, maintain append-only maintenance histories, and manage role-based user permissions.
 
 ---
@@ -46,6 +50,24 @@ A full-stack Equipment Maintenance and Logging System built with **React** and *
 
 ---
 
+## 🎨 Theme & UI Design System
+
+The system is styled with a custom-engineered **Modern Cyber-Dark Glassmorphic Theme**, designed for high visual ergonomics, crisp contrast, and an elevated professional workstation experience:
+
+- **High-Contrast Dark Palette**: Built on deep obsidian foundation tones (`#0d1117`, `#161b22`, `#1c2128`) inspired by modern developer tooling to significantly eliminate eye fatigue during intensive logging, auditing, and administrative workflows.
+- **Electric Blue Focus Accents**: Employs an electric blue primary accent (`#58a6ff` / `#388bfd`) accompanied by soft ambient glow states (`rgba(88, 166, 255, 0.15)`) to naturally guide user attention toward active navigation, primary action buttons, and focused form inputs.
+- **Semantic Status Badges**: Quick-scan, color-coded indicators for immediate equipment and log status identification:
+  - 🟢 **Working / Inspected**: Fresh emerald green (`#3fb950`, `rgba(63, 185, 80, 0.12)`)
+  - 🟡 **Needs Replacement**: Amber gold warning (`#d29922`, `rgba(210, 153, 34, 0.15)`)
+  - 🔴 **Under Repair / Destructive Action**: Vivid crimson red (`#f85149`, `rgba(248, 81, 73, 0.12)`)
+  - 🟣 **Modified / Disposed**: Tech purple & muted steel (`#bc8cff`, `#8b949e`)
+- **Dual Typography Pairing**:
+  - **Inter**: Geometric sans-serif font for readable typography, table headers, forms, and navigation labels.
+  - **JetBrains Mono**: High-legibility monospace font for serial/property numbers, dates, status badges, and database identifiers.
+- **Glassmorphism & Depth Elevation**: Semi-translucent layered surface containers, subtle border highlights (`#30363d`), backdrop blur overlays on modal confirmation dialogs, and smooth micro-interactions (`0.18s ease`).
+
+---
+
 ## 👥 Default Demo Accounts
 
 After running the database seeders, the following accounts are available for testing:
@@ -62,36 +84,55 @@ After running the database seeders, the following accounts are available for tes
 
 ```text
 equipment-maintenance-system/
-├── backend/                   # Laravel REST API Backend
+├── backend/                       # Laravel REST API Backend
 │   ├── app/
-│   │   ├── Http/Controllers/ # Auth, Equipment, Log, Room, User Controllers
-│   │   └── Models/            # Equipment, EquipmentLog, Room, User
+│   │   ├── Http/
+│   │   │   ├── Controllers/       # Auth, Dashboard, Equipment, Log, Room, User Controllers
+│   │   │   └── Middleware/        # RoleMiddleware (RBAC route protection)
+│   │   └── Models/                # Equipment, EquipmentLog, Room, User Eloquent models
 │   ├── database/
-│   │   ├── migrations/        # Database schema migrations
-│   │   └── seeders/           # Initial demo data (DatabaseSeeder.php)
-│   └── routes/
-│       └── api.php            # REST API endpoints
+│   │   ├── migrations/            # Schema migrations (users, equipment, rooms, logs)
+│   │   └── seeders/               # DatabaseSeeder.php (default accounts & demo records)
+│   ├── routes/
+│   │   └── api.php                # Sanctum-authenticated API routes
+│   └── tests/                     # Backend feature and unit tests
 │
-└── frontend/                  # React Frontend Application
-    ├── src/
-    │   ├── components/        # Reusable UI components (DeleteModal.jsx)
-    │   ├── pages/             # Login, Dashboard, Equipment, Admin pages
-    │   ├── styles/            # Modular stylesheets
-    │   │   ├── index.css      # Master CSS entry point
-    │   │   ├── variables.css  # Colors, typography, design tokens
-    │   │   ├── base.css       # Core layout and utility styles
-    │   │   ├── navbar.css     # Navigation bar styles
-    │   │   ├── buttons.css    # Inputs, buttons, pagers
-    │   │   ├── tables.css     # Tables, badges, clickable rows
-    │   │   ├── delete-dialog.css # Confirmation modal styles
-    │   │   ├── dashboard.css  # Stats and recent logs
-    │   │   ├── equipment.css  # Equipment details and timeline
-    │   │   ├── admin.css      # Admin management styles
-    │   │   └── login.css      # Authentication styles
-    │   ├── App.jsx            # Main route configuration
-    │   ├── AuthContext.jsx    # Authentication provider & state
-    │   └── main.jsx           # App entry point
-    └── package.json
+├── frontend/                      # React Frontend Application (Vite)
+│   ├── public/                    # SVG icons, favicon, static assets
+│   ├── src/
+│   │   ├── components/            # Reusable components (DeleteModal.jsx)
+│   │   ├── pages/                 # Admin, Dashboard, Equipment, Login pages & util.jsx
+│   │   ├── styles/                # Modular CSS architecture
+│   │   │   ├── index.css          # Master stylesheet entry point
+│   │   │   ├── variables.css      # Design tokens, color palette, typography
+│   │   │   ├── base.css           # Global layout, reset, utility classes
+│   │   │   ├── navbar.css         # Navigation bar & active links
+│   │   │   ├── buttons.css        # Buttons, inputs, search bars, pagers
+│   │   │   ├── tables.css         # Tables, badges, clickable row hovers
+│   │   │   ├── delete-dialog.css  # Modal confirmation dialog styles
+│   │   │   ├── dashboard.css      # Analytics metrics grid & recent logs
+│   │   │   ├── equipment.css      # Equipment management & audit timeline
+│   │   │   ├── admin.css          # Room & user management views
+│   │   │   └── login.css          # Authentication screen styling
+│   │   ├── api.js                 # Axios instance with Bearer token interceptor
+│   │   ├── App.jsx                # Route declarations & role-based route guards
+│   │   ├── AuthContext.jsx        # Authentication provider & persistent user state
+│   │   └── main.jsx               # Application bootstrap
+│   └── package.json
+│
+└── docs/                          # Project Documentation & Artifacts
+    ├── EMLS.postman_collection.json # API endpoints testing collection
+    ├── EMLS_Presentation.pdf      # System slide presentation deck
+    ├── erd.png                    # Entity Relationship Diagram (ERD)
+    └── screenshots/               # Full application UI preview captures
+        ├── login_page.png         # Authentication view
+        ├── dashboard.png          # Role-based dashboard view
+        ├── equipment_list.png     # Equipment inventory with filters
+        ├── equipment_timeline.png # Maintenance logs & audit trail
+        ├── rooms.png              # Room management with equipment counts
+        ├── users.png              # User management & role assignment
+        ├── delete_dialog.png      # Custom safety delete modal
+        └── void_log_dialog.png    # Audit trail log voiding modal
 ```
 
 ---
